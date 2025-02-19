@@ -1,0 +1,214 @@
+/* General Background */
+body {
+    background-color: #000;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-weight: 500;
+    color: #009970;
+    font-size: 24px;
+    transition: color 0.3s;
+}
+
+.login-button {
+    border-radius: 50px;
+    background-color: #009970;
+    padding: 8px 20px;
+    text-decoration: none;
+    color: #fff;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.login-button:hover {
+    background-color: #00b383;
+}
+
+.navbar-toggler {
+    border: none;
+    font-size: 1.25rem;
+}
+
+/* Navbar Link Hover Effect */
+.nav-link {
+    color: #666777;
+    font-weight: 500;
+    position: relative;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: #fff;
+}
+
+.nav-link::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background-color: #009970;
+    visibility: hidden;
+    transition: 0.3s ease-in-out;
+}
+
+.nav-link:hover::before, .nav-link.active::before {
+    width: 100%;
+    visibility: visible;
+}
+
+/* Quote Section */
+.quote-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 100px;
+}
+
+.quote-section {
+    display: flex;
+    justify-content: center;
+    border-radius: 30px;
+    padding: 10px 20px;
+}
+
+#quote {
+    font-size: 30px;
+    font-weight: 500;
+    color: #009970;
+}
+
+/* Trip Start Section */
+.trip-start-div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    height: 200px;
+    width: 100%;
+    margin: auto;
+    /* border: 2px solid red; */
+}
+
+.trip-start {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 50px;
+}
+
+.trip-start-btn {
+    background-color: #009970;
+    border-radius: 50px;
+    color: #fff;
+    padding: 10px 20px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: background 0.3s;
+}
+
+.trip-start-btn:hover {
+    background-color: #00b383;
+}
+
+/* Adjust Icon Spacing */
+.icon-div1, .icon-div2 {
+    display: flex;
+    justify-content: space-around;
+    gap: 20px; /* Even spacing */
+}
+.icon{
+    margin: 10px 30px;
+}
+/* Main Content */
+.main-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: auto;
+    overflow: hidden;
+}
+
+.main-content img {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+}
+
+/* Search Module */
+.trip-filter ul, .filter {
+    display: flex;
+    justify-content: center;
+    margin: 0;
+}
+
+.trip-filter ul li {
+    margin: 10px;
+    text-decoration: none;
+    list-style: none;
+}
+
+.trip-filter ul li a {
+    text-decoration: none;
+    color: #fff;
+}
+
+/* Search Input */
+.trip-destination {
+    display: flex;
+    align-items: center;
+    border-radius: 30px;
+    border: 3px solid #009970;
+    overflow: hidden;
+    width: 300px;
+}
+
+.trip-destination input {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    outline: none;
+}
+
+.trip-destination button {
+    background-color: #009970;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    color: #fff;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.trip-destination button:hover {
+    background: #00b383;
+}
+
+.m-trip-start-div{
+    display: none;
+}
+/* Mobile View */
+@media (max-width: 991px) {
+    #quote{
+        font-size: 20px;
+    }
+    .trip-start-div, .icon-div1, .icon-div2, .trip-start {
+        display: none;
+    }
+
+    .m-trip-start-div {
+        display: flex;
+        justify-content: space-between;
+        margin: 20px;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .m-icon-div1, .m-icon-div2 {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+}

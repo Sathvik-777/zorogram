@@ -349,103 +349,115 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    async function submitForm() {
-        try {
-            const user = auth.currentUser;
-            if (!user) {
-                alert("You must be logged in to save your trip.");
-                return;
-            }
-    
-            const email = user.email;
-            const tripName = document.getElementById('tripName').value.trim();
-            if (!tripName) {
-                alert("Trip name is required.");
-                return;
-            }
-    
-            const form = event.target.closest(".form-container");
+async function submitForm(event) {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            alert("You must be logged in to save your trip.");
+            return;
+        }
 
-            const headingEl = form.querySelector(".day-heading");
-            if (!headingEl) {
-               console.error("Day heading not found in the form.");
-              return;
-            }
-const dayId = headingEl.textContent; // e.g., "Day 1"
-    
-            // ==== FOOD ====
-            const foodItems = form.querySelectorAll(".foodCart .cart-item");
-            const foodMap = {
-                Breakfast: [],
-                Lunch: [],
-                Dinner: [],
-                Snack: []
-            };
-    
-            foodItems.forEach(item => {
-                const [type, name, price, location] = item.textContent.split(" - ");
-                if (type && name && price && location) {
-                    foodMap[type]?.push({
-                        item: name.trim(),
-                        itemPrice: parseFloat(price.replace("₹", "").trim()),
-                        location: location.trim()
-                    });
-                }
-            });
-    
-            // ==== ACCOMMODATION ====
-            const hotelItem = form.querySelector(".hotelCart .cart-item")?.textContent;
-            let accommodationData = {};
-            if (hotelItem) {
-                // Expected format: "Hotel: <name> - ₹<price> - <address>"
-                const match = hotelItem.match(/^Hotel:\s*(.+?)\s*-\s*₹(\d+(?:\.\d+)?)\s*-\s*(.+)$/);
-                if (match) {
-                    const [, name, price, address] = match;
-                    accommodationData = {
-                        hotelName: name.trim(),
-                        hotelCost: parseFloat(price.trim()),
-                        address: address.trim()
-                    };
-                } else {
-                    console.warn("Accommodation format not recognized:", hotelItem);
-                }
-            }
-            
-    
-            const travelItem = form.querySelector(".travelCart .cart-item")?.textContent;
-let travelData = {};
-if (travelItem) {
-    // Expected format: "bike - Hyderabad - Bangalore - ₹500"
-    const match = travelItem.match(/^(.+?)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*₹(\d+(?:\.\d+)?)/);
-    if (match) {
-        const [, mode, from, to, cost] = match;
-        travelData = {
-            mode: mode.trim(),
-            from: from.trim(),
-            to: to.trim(),
-            cost: parseFloat(cost)
+        const email = user.email;
+        const tripName = document.getElementById('tripName').value.trim();
+        if (!tripName) {
+            alert("Trip name is required.");
+            return;
+        }
+
+        const form = event.target.closest(".form-container");
+
+        const headingEl = form.querySelector(".day-heading");
+        if (!headingEl) {
+            console.error("Day heading not found in the form.");
+            return;
+        }
+        const dayId = headingEl.textContent; // e.g., "Day 1"
+
+        // ==== FOOD ====
+        const foodItems = form.querySelectorAll(".foodCart .cart-item");
+        const foodMap = {
+            Breakfast: [],
+            Lunch: [],
+            Dinner: [],
+            Snack: []
         };
-    } else {
-        console.warn("Travel format not recognized:", travelItem);
+
+        foodItems.forEach(item => {
+            const [type, name, price, location] = item.textContent.split(" - ");
+            if (type && name && price && location) {
+                foodMap[type]?.push({
+                    item: name.trim(),
+                    itemPrice: parseFloat(price.replace("₹", "").trim()),
+                    location: location.trim()
+                });
+            }
+        });
+
+        // ==== ACCOMMODATION ====
+        const hotelItem = form.querySelector(".hotelCart .cart-item")?.textContent;
+        let accommodationData = {};
+        if (hotelItem) {
+            const match = hotelItem.match(/^Hotel:\s*(.+?)\s*-\s*₹(\d+(?:\.\d+)?)\s*-\s*(.+)$/);
+            if (match) {
+                const [, name, price, address] = match;
+                accommodationData = {
+                    hotelName: name.trim(),
+                    hotelCost: parseFloat(price.trim()),
+                    address: address.trim()
+                };
+            } else {
+                console.warn("Accommodation format not recognized:", hotelItem);
+            }
+        }
+
+        // ==== TRAVEL ====
+        const travelItem = form.querySelector(".travelCart .cart-item")?.textContent;
+        let travelData = {};
+        if (travelItem) {
+            const match = travelItem.match(/^(.+?)\s*-\s*(.+?)\s*-\s*(.+?)\s*-\s*₹(\d+(?:\.\d+)?)/);
+            if (match) {
+                const [, mode, from, to, cost] = match;
+                travelData = {
+                    mode: mode.trim(),
+                    from: from.trim(),
+                    to: to.trim(),
+                    cost: parseFloat(cost)
+                };
+            } else {
+                console.warn("Travel format not recognized:", travelItem);
+            }
+        }
+
+        // ==== FIRESTORE PATH ====
+        const userDocRef = doc(db, email, tripName);
+        const dayCollection = collection(userDocRef, dayId);
+
+        // Save day data
+        await setDoc(doc(dayCollection, "Food"), foodMap);
+        await setDoc(doc(dayCollection, "Accommodation"), accommodationData);
+        await setDoc(doc(dayCollection, "Travel"), travelData);
+
+        // ==== TOTAL DAYS UPDATE ====
+        const tripDocSnap = await getDoc(userDocRef);
+        let currentTotalDays = 0;
+        if (tripDocSnap.exists() && tripDocSnap.data().total_days) {
+            currentTotalDays = tripDocSnap.data().total_days;
+        }
+
+        // Extract day number from "Day 1"
+        const dayNumber = parseInt(dayId.replace("Day ", "").trim());
+
+        // If new day number is greater than current total_days, update it
+        if (dayNumber > currentTotalDays) {
+            await setDoc(userDocRef, { total_days: dayNumber }, { merge: true });
+        }
+
+        alert(`${dayId} data saved successfully!`);
+    } catch (error) {
+        console.error("Firestore submission error:", error);
+        alert("Failed to submit trip. Please try again.");
     }
 }
-
-            
-            // ==== FIRESTORE PATH ====
-            const userDoc = doc(db, email, tripName);
-            const dayCollection = collection(userDoc, dayId);
-    
-            // Save data
-            await setDoc(doc(dayCollection, "Food"), foodMap);
-            await setDoc(doc(dayCollection, "Accommodation"), accommodationData);
-            await setDoc(doc(dayCollection, "Travel"), travelData);
-    
-            alert(`${dayId} data saved successfully!`);
-        } catch (error) {
-            console.error("Firestore submission error:", error);
-            alert("Failed to submit trip. Please try again.");
-        }
-    }      
     
     
 });

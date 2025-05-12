@@ -1,0 +1,174 @@
+/* General Background */
+body {
+    background-color: #000;
+}
+
+/* User container */
+.user-container {
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+    margin-right: 20px;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-weight: 500;
+    color: #009970;
+    font-size: 24px;
+    transition: color 0.3s;
+}
+
+.login-button,
+.username {
+    border-radius: 50px;
+    background-color: #009970;
+    padding: 8px 20px;
+    text-decoration: none;
+    color: #fff;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.username {
+    width: 10%;
+}
+
+.login-button:hover {
+    background-color: #00b383;
+}
+
+.navbar-toggler,
+.username {
+    border: none;
+    font-size: 1.25rem;
+}
+
+/* Navbar Link Hover Effect */
+.nav-link {
+    color: #666777;
+    font-weight: 500;
+    position: relative;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: #fff;
+}
+
+.nav-link::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background-color: #009970;
+    visibility: hidden;
+    transition: 0.3s ease-in-out;
+}
+
+.nav-link:hover::before,
+.nav-link.active::before {
+    width: 100%;
+    visibility: visible;
+}
+
+/* Search Filter Container */
+.search-div {
+    display: flex;
+    height: 150px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Trip Filter List */
+.trip-filter ul {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: 30px;
+}
+
+.trip-filter ul li a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    position: relative;
+    padding-bottom: 5px;
+    transition: color 0.3s ease;
+}
+
+/* Underline effect */
+.trip-filter ul li a::after {
+    content: '';
+    position: absolute;
+    width: 0%;
+    height: 4px;
+    left: 0;
+    bottom: -4px;
+    background-color: #009970;
+    transition: width 0.3s ease;
+    border-radius: 3px;
+}
+
+.trip-filter ul li a.active-filter::after {
+    width: 100%;
+}
+
+/* Filter Container */
+.filter {
+    display: none;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* Search Input Container */
+.search-input-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Filter Input Fields */
+#search-destination,
+#search-budget,
+#search-username,
+#search-noofdays {
+    width: 300px;
+    padding: 8px 35px 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    outline: none;
+}
+
+/* Filter Buttons */
+.search-input-container button {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    #search-destination,
+    #search-budget,
+    #search-username,
+    #search-noofdays {
+        width: 100%;
+        max-width: 250px;
+    }
+
+    .trip-filter ul {
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sign up / Login</title>
+    <link rel="stylesheet" href="./loginPage.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Tangerine">
+    <script src="https://kit.fontawesome.com/5b6df90aee.js" crossorigin="anonymous"></script>
+    <script type="module" src="loginPage.js" defer></script>
+  </head>
+  <body>
+    <div class="main">
+      <input type="checkbox" id="chk" aria-hidden="true" />
+      <div class="signup">
+        <form id="signupForm" onsubmit="sign_up_user(event)">
+          <label for="chk" id="signup-heading" aria-hidden="true">Sign up</label>
+          <div id='uname'><input type="text" name="txt" placeholder="User name" required /></div>
+          <div id='mail'><input type="email" name="email" placeholder="Email" required /></div>
+          <div id="pass">
+            <input id="pswd" type="password" name="pswd" placeholder="Password" required />
+            <img id="pass-icon1" class="pass-icon" onclick="pass('pswd', 'pass-icon1')" src="eye-close.svg">
+          </div>
+          <div id="re-pass">
+            <input id="re-pswd" type="password" name="re-pswd" placeholder="Renter-Password" required />
+            <img id="pass-icon2" class="repass-icon" onclick="pass('re-pswd', 'pass-icon2')" src="eye-close.svg">
+          </div>
+          <button id="signup-btn" type="submit">Sign up</button>
+        </form>
+      </div>
+
+      <div class="login">
+        <form id="loginForm" onsubmit="validateLoginForm(event)">
+          <label for="chk" aria-hidden="true">Login</label>
+          <input type="text" name="email" placeholder="Email" required />
+          <input type="password" id="login-pswd" name="pswd" placeholder="Password" required />
+          <img id="pass-icon3" class="loginpass-icon" onclick="pass('login-pswd', 'pass-icon3')" src="eye-close.svg">
+          <button type="submit" name="login">Login</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="Page_response">
+      <i class="fa-regular fa-face-smile-beam fa-bounce fa-10x" id="response_img1" style="color: #1046a2;"></i>
+      <i class="fa-regular fa-face-frown fa-beat fa-10x" id="response_img2" style="color: #ba0d0d;"></i>
+      <div class="response_msg"></div>
+    </div>
+  </body>
+</html>

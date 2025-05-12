@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Days Results</title>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    .card {
+      border: 2px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      position: relative;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 40px;
+      border: 2px solid #888;
+      border-radius: 10px;
+      width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .rating-stars span {
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .rating-stars span.selected {
+      color: gold;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 id="page-title">Loading trips...</h1>
+  <div id="tripsContainer"></div>
+
+  <div class="modal" id="popup" style="display: none;">
+    <div class="modal-content" id="popupContent"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVNJzEZQyY0RCZlkfrqKrKdIggQrx62KU",
+      authDomain: "zorogram-e0eea.firebaseapp.com",
+      projectId: "zorogram-e0eea",
+      storageBucket: "zorogram-e0eea.appspot.com",
+      messagingSenderId: "3495535292",
+      appId: "1:3495535292:web:3c8c21807fbfd1d3d026b9",
+      measurementId: "G-7YFSQZZ72G"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const tripsContainer = document.getElementById('tripsContainer');
+    const pageTitle = document.getElementById('page-title');
+    const popup = document.getElementById('popup');
+    const popupContent = document.getElementById('popupContent');
+
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        window.currentUser = user;
+      } else {
+        alert("Please log in to view or rate trips.");
+      }
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetDays = parseInt(urlParams.get('days'), 10);
+
+    if (isNaN(targetDays) || targetDays <= 0) {
+      pageTitle.textContent = "Invalid number of days.";
+      tripsContainer.innerHTML = `<p>Please specify a valid number of days in the URL (e.g., ?days=3).</p>`;
+    } else {
+      pageTitle.textContent = `Trips for ${targetDays} Days`;
+      const tripsRef = db.collection("trips");
+
+      tripsRef.get().then(async (tripsSnapshot) => {
+        if (tripsSnapshot.empty) {
+          tripsContainer.innerHTML = `<p>No trips found.</p>`;
+          return;
+        }
+
+        let hasMatchingTrips = false;
+
+        for (const tripDoc of tripsSnapshot.docs) {
+          const tripId = tripDoc.id;
+          const tripData = tripDoc.data();
+
+          const usersSnapshot = await tripsRef.doc(tripId).collection("users").get();
+
+          for (const userDoc of usersSnapshot.docs) {
+            const userId = userDoc.id;
+            const userData = userDoc.data();
+            const userEmail = userData.email;
+            const userDays = parseInt(userData.totalDays) || 0;
+
+            if (userDays !== targetDays) continue;
+
+            hasMatchingTrips = true;
+
+            let userBudget = 0;
+            let userViews = userData.numberOfViews || 0;
+            let userRating = userData.totalRating || 0;
+            let userNumRatings = userData.numRatings || 0;
+
+            const daysSnapshot = await tripsRef.doc(tripId).collection("users").doc(userId).collection("days").get();
+
+            for (const dayDoc of daysSnapshot.docs) {
+              const dayData = dayDoc.data();
+
+              if (dayData.Food) {
+                for (const meal in dayData.Food) {
+                  dayData.Food[meal].forEach(item => {
+                    userBudget += parseFloat(item.itemPrice) || 0;
+                  });
+                }
+              }
+
+              if (Array.isArray(dayData.Accommodation)) {
+                dayData.Accommodation.forEach(acc => {
+                  userBudget += parseFloat(acc.hotelCost) || 0;
+                });
+              }
+
+              if (Array.isArray(dayData.Travel)) {
+                dayData.Travel.forEach(travel => {
+                  userBudget += parseFloat(travel.cost) || 0;
+                });
+              }
+            }
+
+            const card = document.createElement('div');
+            card.classList.add('card');
+
+            const title = document.createElement('h3');
+            title.textContent = `User: ${userEmail}`;
+
+            const destination = document.createElement('p');
+            destination.textContent = `Destination: ${tripId}`;
+
+            const days = document.createElement('p');
+            days.textContent = `🗓️ Total Days: ${userDays}`;
+
+            const budget = document.createElement('p');
+            budget.textContent = `💰 Budget: ₹${userBudget.toFixed(2)}`;
+
+            const views = document.createElement('p');
+            views.textContent = `👁️ Views: ${userViews}`;
+
+            const avg = userNumRatings ? (userRating / userNumRatings).toFixed(1) : "Not rated";
+            const rating = document.createElement('p');
+            rating.textContent = `⭐ Rating: ${avg}`;
+
+            const viewBtn = document.createElement('button');
+            viewBtn.textContent = "View More";
+            viewBtn.onclick = () => showDetails(tripId, userId, userEmail);
+
+            card.append(title, destination, days, budget, views, rating, viewBtn);
+            tripsContainer.appendChild(card);
+          }
+        }
+
+        if (!hasMatchingTrips) {
+          tripsContainer.innerHTML = `<p>No trips found for ${targetDays} days.</p>`;
+        }
+      });
+    }
+
+    function showDetails(tripId, userId, userEmail) {
+      const tripRef = db.collection("trips").doc(tripId);
+
+      popupContent.innerHTML = `<h2>${tripId} - ${userEmail}</h2>`;
+
+      const userDiv = document.createElement('div');
+      userDiv.innerHTML = `<h3>User: ${userEmail}</h3>`;
+
+      tripRef.collection("users").doc(userId).get().then(docSnap => {
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          const hasViewed = (data.viewers || []).includes(currentUser.uid);
+          if (!hasViewed) {
+            tripRef.collection("users").doc(userId).update({
+              numberOfViews: firebase.firestore.FieldValue.increment(1),
+              viewers: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+            });
+          }
+        }
+      });
+
+      tripRef.collection("users").doc(userId).collection("days").get().then(daysSnapshot => {
+        daysSnapshot.forEach(dayDoc => {
+          const dayData = dayDoc.data();
+          const dayDiv = document.createElement('div');
+
+          const dayTitle = document.createElement('h4');
+          dayTitle.textContent = dayDoc.id;
+          dayDiv.appendChild(dayTitle);
+
+          if (dayData.Food) {
+            const food = document.createElement('div');
+            food.innerHTML = `<h5>🍽️ Food</h5>`;
+            for (let meal in dayData.Food) {
+              const items = dayData.Food[meal];
+              const mealTitle = document.createElement('h6');
+              mealTitle.textContent = meal;
+              food.appendChild(mealTitle);
+              items.forEach(item => {
+                const ul = document.createElement('ul');
+                ul.innerHTML = `
+                  <li><strong>Item:</strong> ${item.item}</li>
+                  <li><strong>Price:</strong> ₹${item.itemPrice}</li>
+                  <li><strong>Location:</strong> ${item.location}</li>
+                `;
+                food.appendChild(ul);
+              });
+            }
+            dayDiv.appendChild(food);
+          }
+
+          if (Array.isArray(dayData.Accommodation)) {
+            const acc = document.createElement('div');
+            acc.innerHTML = `<h5>🏨 Accommodation</h5>`;
+            dayData.Accommodation.forEach(a => {
+              const ul = document.createElement('ul');
+              ul.innerHTML = `
+                <li><strong>Hotel:</strong> ${a.hotelName}</li>
+                <li><strong>Cost:</strong> ₹${a.hotelCost}</li>
+                <li><strong>Address:</strong> ${a.address}</li>
+              `;
+              acc.appendChild(ul);
+            });
+            dayDiv.appendChild(acc);
+          }
+
+          if (Array.isArray(dayData.Travel)) {
+            const travel = document.createElement('div');
+            travel.innerHTML = `<h5>🚌 Travel</h5>`;
+            dayData.Travel.forEach(t => {
+              const ul = document.createElement('ul');
+              ul.innerHTML = `
+                <li><strong>Mode:</strong> ${t.mode}</li>
+                <li><strong>From:</strong> ${t.from}</li>
+                <li><strong>To:</strong> ${t.to}</li>
+                <li><strong>Cost:</strong> ₹${t.cost}</li>
+              `;
+              travel.appendChild(ul);
+            });
+            dayDiv.appendChild(travel);
+          }
+
+          userDiv.appendChild(dayDiv);
+        });
+
+        popupContent.appendChild(userDiv);
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = "Download Trip";
+        downloadBtn.onclick = () => downloadTripAsText(tripId, userId, userEmail);
+        popupContent.appendChild(downloadBtn);
+
+        const ratingDiv = document.createElement('div');
+        ratingDiv.innerHTML = `<h4>Rate this trip:</h4>`;
+        const starsContainer = document.createElement('div');
+        starsContainer.classList.add('rating-stars');
+
+        for (let i = 1; i <= 5; i++) {
+          const star = document.createElement('span');
+          star.innerHTML = '★';
+          star.dataset.value = i;
+          star.onclick = () => submitRating(tripId, userId, i);
+          starsContainer.appendChild(star);
+        }
+
+        ratingDiv.appendChild(starsContainer);
+        popupContent.appendChild(ratingDiv);
+
+        popup.style.display = 'flex';
+
+        popup.onclick = (e) => {
+          if (e.target === popup) {
+            popup.style.display = 'none';
+          }
+        };
+      });
+    }
+
+    async function downloadTripAsText(tripId, userId, userEmail) {
+      const tripRef = db.collection("trips").doc(tripId);
+      const userDoc = await tripRef.collection("users").doc(userId).get();
+      let content = `Trip: ${tripId}\nUser: ${userEmail}\n\n`;
+
+      const daysSnapshot = await tripRef.collection("users").doc(userId).collection("days").get();
+
+      daysSnapshot.forEach(dayDoc => {
+        const dayData = dayDoc.data();
+        content += `  --- ${dayDoc.id} ---\n`;
+
+        if (dayData.Food) {
+          content += "🍽️ Food:\n";
+          for (const meal in dayData.Food) {
+            content += `    ${meal}:\n`;
+            dayData.Food[meal].forEach(item => {
+              content += `      - ${item.item} (₹${item.itemPrice}) at ${item.location}\n`;
+            });
+          }
+        }
+
+        if (Array.isArray(dayData.Accommodation)) {
+          content += "🏨 Accommodation:\n";
+          dayData.Accommodation.forEach(acc => {
+            content += `    - ${acc.hotelName} (₹${acc.hotelCost}) at ${acc.address}\n`;
+          });
+        }
+
+        if (Array.isArray(dayData.Travel)) {
+          content += "🚌 Travel:\n";
+          dayData.Travel.forEach(t => {
+            content += `    - ${t.mode} from ${t.from} to ${t.to} (₹${t.cost})\n`;
+          });
+        }
+
+        content += `\n`;
+      });
+
+      const blob = new Blob([content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tripId}_${userEmail}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function submitRating(tripId, userId, ratingValue) {
+      const tripRef = db.collection("trips").doc(tripId);
+      const userRef = tripRef.collection("users").doc(userId);
+
+      userRef.get().then(docSnap => {
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          const hasRated = (data.raters || []).includes(currentUser.uid);
+          if (hasRated) {
+            alert("You’ve already rated this trip.");
+          } else {
+            userRef.update({
+              totalRating: firebase.firestore.FieldValue.increment(ratingValue),
+              numRatings: firebase.firestore.FieldValue.increment(1),
+              raters: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+            }).then(() => {
+              alert("Thanks for rating!");
+            });
+          }
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>
